@@ -1,0 +1,12 @@
+#!/bin/sh
+
+URL="http://admin@localhost/rest/apps"
+PKG="50_havis.opcua.message-api.jar 50_havis.opcua.message-common.jar"
+
+for pkg in $PKG; do
+  busybox wget $URL/$pkg/plug -q --spider
+done
+
+/etc/init.d/opc-ua.sh restart
+
+exit 0

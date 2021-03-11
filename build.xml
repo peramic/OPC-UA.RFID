@@ -1,0 +1,97 @@
+<?xml version="1.0"?>
+<project name="havis.opc-ua" default="publish" xmlns:ivy="antlib:org.apache.ivy.ant" xmlns:if="ant:if" xmlns:unless="ant:unless">
+
+	<property file="${basedir}/build.properties" />
+
+	<import>
+		<url url="${ivy.url}/ant/default.xml" />
+	</import>
+
+	<target name="clean-cache">
+		<clean-cache />
+	</target>
+
+	<target name="clean-all">
+		<clean-all />
+	</target>
+
+	<target name="retrieve">
+		<retrieve />
+		<ivy:retrieve pattern="${build.dir}/server.tgz" conf="server" />
+	</target>
+
+	<target name="untar-models" depends="retrieve">
+		<untar src="${build.dir}/server.tgz" dest="${build.dir}/deb_models/opt/havis.opc-ua" compression="gzip">
+			<patternset>
+				<include name="**/models/10_di.xml" />
+				<include name="**/models/20_autoid.xml" />
+				<include name="**/models/30_aim.xml" />
+			</patternset>
+			<mapper>
+				<cutdirsmapper dirs="1" />
+			</mapper>
+		</untar>
+	</target>
+
+	<target name="untar" depends="retrieve">
+		<untar src="${build.dir}/server.tgz" dest="${build.dir}/deb/opt/havis.opc-ua" compression="gzip">
+			<patternset>
+				<include name="**/lib/*.so" />
+				<include name="**/lib/provider/libbinary.so" />
+				<include name="**/lib/provider/libuanodesetxml.so" />
+				<include name="**/Server" />
+				<include name="**/config.xml" />
+				<include name="**/ServerConfig.xml" />
+			</patternset>
+			<mapper>
+				<cutdirsmapper dirs="1" />
+			</mapper>
+		</untar>
+		<copy todir="${build.dir}/deb/lib" if:set="arm">
+			<fileset file="/usr/lib/arm-linux-gnueabihf/libxml2.so.2.9.4" />
+			<fileset file="/usr/lib/arm-linux-gnueabihf/libicui18n.so.57.1" />
+			<fileset file="/usr/lib/arm-linux-gnueabihf/libicuuc.so.57.1" />
+			<fileset file="/usr/lib/arm-linux-gnueabihf/libicudata.so.57.1" />
+			<fileset file="/usr/lib/arm-linux-gnueabihf/libssl.so.1.0.2" />
+			<fileset file="/usr/lib/arm-linux-gnueabihf/libcrypto.so.1.0.2" />
+			<fileset file="/lib/arm-linux-gnueabihf/liblzma.so.5.2.2" />
+		</copy>
+		<copy todir="${build.dir}/deb/lib/openssl-1.0.0/engines" if:set="arm">
+			<fileset dir="/usr/lib/arm-linux-gnueabihf/openssl-1.0.2/engines" />
+		</copy>
+		<symlink link="${build.dir}/deb/lib/libxml2.so.2" resource="libxml2.so.2.9.4" overwrite="true" if:set="arm" />
+		<symlink link="${build.dir}/deb/lib/libicui18n.so.57" resource="libicui18n.so.57.1" overwrite="true" if:set="arm" />
+		<symlink link="${build.dir}/deb/lib/libicuuc.so.57" resource="libicuuc.so.57.1" overwrite="true" if:set="arm" />
+		<symlink link="${build.dir}/deb/lib/libicudata.so.57" resource="libicudata.so.57.1" overwrite="true" if:set="arm" />
+		<symlink link="${build.dir}/deb/lib/liblzma.so.5" resource="liblzma.so.5.2.2" overwrite="true" if:set="arm" />
+	</target>
+
+	<target name="deb" depends="untar, untar-models">
+		<deb jar="false" arch="${arch}">
+			<ivy:retrieve pattern="${dst.dir}/bundle/50_[artifact].[ext]" conf="runtime" />
+			<chmod perm="755" type="file">
+				<fileset dir="${build.dir}/deb/opt/havis.opc-ua">
+					<include name="opc-ua.sh" />
+					<include name="Server.sh" />
+					<include name="Server" />
+				</fileset>
+			</chmod>
+			<mkdir dir="${build.dir}/deb/opt/havis.opc-ua/pkiserver/issuers/certs" />
+			<mkdir dir="${build.dir}/deb/opt/havis.opc-ua/pkiserver/issuers/crl" />
+			<mkdir dir="${build.dir}/deb/opt/havis.opc-ua/pkiserver/trusted/certs" />
+			<mkdir dir="${build.dir}/deb/opt/havis.opc-ua/pkiserver/trusted/crl" />
+			<mkdir dir="${build.dir}/deb/etc/init.d" />
+			<mkdir dir="${build.dir}/deb/etc/rc2.d" />
+			<mkdir dir="${build.dir}/deb/var/log/opc-ua" />
+			<symlink link="${build.dir}/deb/etc/init.d/" resource="/opt/havis.opc-ua/opc-ua.sh" overwrite="true" />
+			<symlink link="${build.dir}/deb/etc/rc2.d/S60opc-ua" resource="../init.d/opc-ua.sh" overwrite="true" />
+			<symlink link="${build.dir}/deb/opt/havis.opc-ua/log" resource="/var/log/opc-ua" overwrite="true" />
+		</deb>
+		<deb jar="false" dir="deb_models" package="${basename}.models" />
+	</target>
+
+	<target name="publish" depends="deb">
+		<publish jar="false" src="false" doc="false" app="false" />
+	</target>
+
+</project>

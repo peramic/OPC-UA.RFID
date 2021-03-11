@@ -1,0 +1,19 @@
+#!/bin/bash
+
+set -e
+set -x
+
+env
+
+. /usr/share/mkapp/functions
+
+set_env $ARCH
+
+apt-get update
+apt-get install -y libssl1.0.2:$ARCH
+
+ant_build
+
+if [ "$PUBLISH" ]; then
+  publish_ivy ivy
+fi

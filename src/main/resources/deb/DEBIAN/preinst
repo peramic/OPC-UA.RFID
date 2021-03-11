@@ -1,0 +1,7 @@
+#!/bin/sh
+
+. /etc/profile
+
+if [ -d /opt/havis.opc-ua/log ]; then
+  rm -rf /opt/havis.opc-ua/log
+fi
